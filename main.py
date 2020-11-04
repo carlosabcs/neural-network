@@ -10,6 +10,7 @@ def run_neural_network(
     dataset_file
 ):
     nn = NeuralNetwork(network_file, initial_weights_file, dataset_file)
+    nn.test_backpropagation()
 
 
 def main():
