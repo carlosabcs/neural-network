@@ -16,16 +16,20 @@ def parse_network_configuration(network_file):
 def parse_initial_weights(initial_weights_file):
     lines = initial_weights_file.readlines()
     layers_weights = []
+    layers_weights_without_bias = []
     for line in lines:
         layer_weights = []
+        layer_weights_without_bias = []
         for neurons_weights in line.split('; '):
             neuron_weights = []
             weights = neurons_weights.split(', ')
             for weight in weights:
                 neuron_weights.append(float(weight))
             layer_weights.append(np.array(neuron_weights))
+            layer_weights_without_bias.append(np.array(neuron_weights[1:]))
         layers_weights.append(np.array(layer_weights))
-    return np.array(layers_weights)
+        layers_weights_without_bias.append(np.array(layer_weights_without_bias))
+    return np.array(layers_weights), np.array(layers_weights_without_bias)
 
 
 def parse_dataset_file(dataset_file):
