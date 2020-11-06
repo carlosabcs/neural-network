@@ -15,9 +15,12 @@ def run_neural_network(
 
 def main():
     parser = argparse.ArgumentParser(description='Multilayer neural network parser')
-    parser.add_argument('--network', help='The filename of the network configuration', required=True)
-    parser.add_argument('--initial_weights', help='The filename of the initial weights configuration', required=True)
-    parser.add_argument('--dataset', help='The filename of the dataset', required=True)
+    parser.add_argument('-n', '--network', help='The filename of the network configuration',
+                        default= 'network.txt' ,required=False)
+    parser.add_argument('-i', '--initial_weights', help='The filename of the initial weights configuration',
+                        default='initial_weights.txt', required=False)
+    parser.add_argument('-d', '--dataset', help='The filename of the dataset',
+                        default='dataset.txt', required=False)
 
     args = parser.parse_args()
 
