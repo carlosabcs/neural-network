@@ -17,20 +17,28 @@ def parse_initial_weights(initial_weights_file):
     lines = initial_weights_file.readlines()
     layers_weights = []
     layers_weights_without_bias = []
+
     for line in lines:
         layer_weights = []
         layer_weights_without_bias = []
         for neurons_weights in line.split('; '):
-            neuron_weights = []
-            weights = neurons_weights.split(', ')
-            for weight in weights:
-                neuron_weights.append(float(weight))
+            neuron_weights = neurons_weights.split(', ')
+            for i in range(len(neuron_weights)):
+                neuron_weights[i] = float(neuron_weights[i])
             layer_weights.append(np.array(neuron_weights))
             layer_weights_without_bias.append(np.array(neuron_weights[1:]))
+
         layers_weights.append(np.array(layer_weights))
         layers_weights_without_bias.append(np.array(layer_weights_without_bias))
+
     return np.array(layers_weights), np.array(layers_weights_without_bias)
 
+def get_instances(data):
+    instance = []
+    for element in data.split(', '):
+        instance.append(float(element))
+
+    return np.array(instance)
 
 def parse_dataset_file(dataset_file):
     lines = dataset_file.readlines()
@@ -39,14 +47,7 @@ def parse_dataset_file(dataset_file):
     for line in lines:
         input_data, output_data = line.split('; ')
 
-        instance = []
-        for input_element in input_data.split(', '):
-            instance.append(float(input_element))
-        data.append(np.array(instance))
-
-        instance = []
-        for output_element in output_data.split(', '):
-            instance.append(float(output_element))
-        output.append(np.array(instance))
+        data.append(get_instances(input_data))
+        output.append(get_instances(output_data))
 
     return np.array(data), np.array(output)

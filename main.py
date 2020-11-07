@@ -4,11 +4,7 @@ import os
 from neural_network import NeuralNetwork
 
 
-def run_neural_network(
-    network_file,
-    initial_weights_file,
-    dataset_file
-):
+def run_neural_network(network_file, initial_weights_file, dataset_file):
     nn = NeuralNetwork(network_file, initial_weights_file, dataset_file)
     nn.test_backpropagation()
 
@@ -39,7 +35,6 @@ def main():
         return
     dataset_file = open(args.dataset, 'r')
     run_neural_network(network_file, initial_weights_file, dataset_file)
-
 
 if __name__ == "__main__":
     main()

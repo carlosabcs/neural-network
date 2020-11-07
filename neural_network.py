@@ -6,12 +6,7 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
 
 class NeuralNetwork:
-    def __init__(
-        self,
-        network_file = None,
-        initial_weights_file = None,
-        dataset_file = None
-    ):
+    def __init__(self, network_file = None, initial_weights_file = None, dataset_file = None):
         # TODO: Use random when config files don't exist
         # self.reg_factor = 1
         # self.input_layer_size = 0
@@ -25,7 +20,7 @@ class NeuralNetwork:
             self.input_layer_size,\
             self.output_layer_size,\
             self.hidden_layers_sizes = parse_network_configuration(network_file)
-            self.n_layers = 1 + len(self.hidden_layers_sizes) + 1
+            self.n_layers = 2 + len(self.hidden_layers_sizes)
 
         if initial_weights_file:
             self.weights, self.weights_without_bias = parse_initial_weights(initial_weights_file)
@@ -35,9 +30,13 @@ class NeuralNetwork:
 
 
     def __calculate_error(self, predicted, target):
-        return np.sum(
-            np.multiply((-1 * target), np.log(predicted)) - np.multiply((1 - target), np.log(1 - predicted))
-        )
+        # changed by Claudia
+        # please check if the change is correct
+        first_mult = np.multiply((-1 * target), np.log(predicted))
+        second_mult = np.multiply((1 - target), np.log(1 - predicted))
+        n = len(target)
+
+        return np.sum(first_mult - second_mult)/n
 
 
     def test_backpropagation(self):
