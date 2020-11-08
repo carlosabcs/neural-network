@@ -1,40 +1,48 @@
 import argparse
 import numpy as np
 import os
+import json
+import pandas as pd
 from neural_network import NeuralNetwork
 
 
-def run_neural_network(network_file, initial_weights_file, dataset_file):
-    nn = NeuralNetwork(network_file, initial_weights_file, dataset_file)
-    nn.test_backpropagation()
+def preprocess(df, types):
+    # One hot encoding
+    non_numeric_columns = []
+    numeric_columns = []
+    for col in types.keys():
+        if df[col].dtype != 'object':
+            numeric_columns.append(col)
+            continue
+        non_numeric_columns.append(col)
+    df = pd.get_dummies(df, columns=non_numeric_columns)
+
+    # Data normalization
+    for col in numeric_columns:
+        min_val = df[col].min()
+        max_val = df[col].max()
+        df[col] = df[col].apply(lambda x: ((x - min_val) / (max_val - min_val)))
+    return df
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Multilayer neural network parser')
-    parser.add_argument('-n', '--network', help='The filename of the network configuration',
-                        default= 'network.txt' ,required=False)
-    parser.add_argument('-i', '--initial_weights', help='The filename of the initial weights configuration',
-                        default='initial_weights.txt', required=False)
-    parser.add_argument('-d', '--dataset', help='The filename of the dataset',
-                        default='dataset.txt', required=False)
+    datasets = [
+        './data/house-votes-84',
+        './data/wine-recognition'
+    ]
 
-    args = parser.parse_args()
+    for dataset in datasets:
+        try:
+            with open(dataset + '.json', 'r') as filetypes:
+                types = json.load(filetypes)
+        except:
+            print('Dataset types not found, automatic types will be used.')
+            types = {}
+        df = pd.read_csv(dataset + '.tsv', sep='\t', dtype=types)
+        print(df)
+        df = preprocess(df, types)
+        print(df)
 
-    if not os.path.isfile(args.network):
-        print('The network configuration file was not found.')
-        return
-    network_file = open(args.network, 'r')
-
-    if not os.path.isfile(args.initial_weights):
-        print('The initial weights configuration file was not found.')
-        return
-    initial_weights_file = open(args.initial_weights, 'r')
-
-    if not os.path.isfile(args.dataset):
-        print('The dataset file was not found.')
-        return
-    dataset_file = open(args.dataset, 'r')
-    run_neural_network(network_file, initial_weights_file, dataset_file)
 
 if __name__ == "__main__":
     main()

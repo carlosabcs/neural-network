@@ -33,12 +33,14 @@ def parse_initial_weights(initial_weights_file):
 
     return np.array(layers_weights), np.array(layers_weights_without_bias)
 
+
 def get_instances(data):
     instance = []
     for element in data.split(', '):
         instance.append(float(element))
 
     return np.array(instance)
+
 
 def parse_dataset_file(dataset_file):
     lines = dataset_file.readlines()
