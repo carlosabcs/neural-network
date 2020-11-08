@@ -37,6 +37,16 @@ class NeuralNetwork:
         return np.sum(first_mult - second_mult)
 
 
+    def __calculate_gradient(self, activations, delta):
+        len_activations = len(activations)
+        activations_reshape = activations.reshape((len_activations, 1))
+        deltas_reshape = delta.reshape(len(delta),1)
+        delta_by_activations = np.multiply(
+                                    deltas_reshape,
+                                    np.transpose(activations_reshape))
+
+        return delta_by_activations
+
     def test_backpropagation(self):
         print('Parâmetro de regularizacao lambda: %s\n' % self.reg_factor)
         print(
@@ -59,7 +69,7 @@ class NeuralNetwork:
         print('-------------------------------------------------------------')
         print('Calculando erro/custo J da rede')
         J = 0
-        activations_by_layers = []
+        activations_by_example = []
         activations = [[] for i in range(self.n_layers)]
         for i in range(len(self.data)):
             print(' ' * 4 + 'Procesando exemplo de treinamento', i + 1)
@@ -95,7 +105,7 @@ class NeuralNetwork:
             error = self.__calculate_error(predicted, self.outputs[i])
             print(' ' * 4 + 'J do exemplo %s: %.3f\n' % (i+1, error))
             J += error
-            activations_by_layers.append(activations.copy())
+            activations_by_example.append(activations.copy())
 
         # Total error with regularization
         J = J / len(self.data)
@@ -105,20 +115,34 @@ class NeuralNetwork:
 
         print('-------------------------------------------------------------')
         print('Rodando backpropagation')
+
+        gradients_by_example = []
+        gradients = [[] for i in range(self.n_layers)]
         for i in range(len(self.data)):
             print(' ' * 4 + 'Calculando gradientes com base no exemplo', i + 1)
             deltas = [[] for i in range(self.n_layers)]
-            # Output layer deltas
-            deltas[self.n_layers - 1] = self.predictions[i] - self.outputs[i]
-            print(' ' * 8 + 'delta%s: %s' % (self.n_layers, deltas[self.n_layers - 1]))
-            for k in range(self.n_layers - 1, 1, -1):
-                deltas[k - 1] = np.multiply(
-                    np.multiply(
-                        np.dot(np.transpose(self.weights[k - 1]), deltas[k]),
-                        activations_by_layers[i][k - 1]
-                    ),
-                    ( 1 - activations_by_layers[i][k - 1] )
-                )
-                deltas[k - 1] = deltas[k - 1][1:]
-                print(' ' * 8 + 'delta%s: %s' % (k, deltas[k - 1]))
 
+            for k in range(self.n_layers, 1, -1):
+                if k == self.n_layers:
+                    # Output layer deltas
+                    deltas[k - 1] = self.predictions[i] - self.outputs[i]
+                else:
+                    # Deltas for hidden layers
+                    deltas[k - 1] = np.multiply(
+                        np.multiply(
+                            np.dot(np.transpose(self.weights[k - 1]), deltas[k]),
+                            activations_by_example[i][k - 1]
+                        ),
+                        ( 1 - activations_by_example[i][k - 1] )
+                    )
+                    deltas[k - 1] = deltas[k - 1][1:]
+
+                print(' ' * 8 + 'delta%s: %s' % (k, deltas[k - 1]))
+                gradients[k - 2] = self.__calculate_gradient(activations_by_example[i][k - 2], deltas[k - 1])
+            gradients_by_example.append(gradients.copy())
+
+            for j in range(self.n_layers - 2, -1, -1):
+                print('%sGradientes de Theta%d com base no exemplo %d:' % (' ' * 8, j + 1, i + 1))
+                for row in gradients[j]:
+                    print('%s%s' % (' ' * 12, row))
+                print()
