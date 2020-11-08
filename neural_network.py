@@ -95,7 +95,7 @@ class NeuralNetwork:
             error = self.__calculate_error(predicted, self.outputs[i])
             print(' ' * 4 + 'J do exemplo %s: %.3f\n' % (i+1, error))
             J += error
-            activations_by_layers.append(activations)
+            activations_by_layers.append(activations.copy())
 
         # Total error with regularization
         J = J / len(self.data)
