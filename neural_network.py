@@ -116,7 +116,7 @@ class NeuralNetwork:
         print('-------------------------------------------------------------')
         print('Rodando backpropagation')
 
-        gradients_by_example = []
+        gradients_accumulated = [[] for i in range(self.n_layers)]
         gradients = [[] for i in range(self.n_layers)]
         for i in range(len(self.data)):
             print(' ' * 4 + 'Calculando gradientes com base no exemplo', i + 1)
@@ -139,10 +139,26 @@ class NeuralNetwork:
 
                 print(' ' * 8 + 'delta%s: %s' % (k, deltas[k - 1]))
                 gradients[k - 2] = self.__calculate_gradient(activations_by_example[i][k - 2], deltas[k - 1])
-            gradients_by_example.append(gradients.copy())
+                if gradients_accumulated[k - 2] == []:
+                    gradients_accumulated[k - 2] = gradients[k - 2]
+                else:
+                    gradients_accumulated[k - 2] = gradients_accumulated[k - 2] + gradients[k - 2]
 
             for j in range(self.n_layers - 2, -1, -1):
                 print('%sGradientes de Theta%d com base no exemplo %d:' % (' ' * 8, j + 1, i + 1))
                 for row in gradients[j]:
                     print('%s%s' % (' ' * 12, row))
                 print()
+
+        print('%sDataset completo processado. Calculando gradientes regularizados' %(' ' * 4))
+        for i in range(self.n_layers - 1):
+            print('%sGradientes finais para Theta%d (com regularizacao):' %(' ' * 8, i + 1))
+            # Add a column with zeros instead of the bias column
+            new_weights = np.zeros(self.weights[i].shape)
+            new_weights[:,1:] = self.weights_without_bias[i]
+
+            P = self.reg_factor * new_weights
+            gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
+            for row in gradients_accumulated[i]:
+                print('%s%s' % (' ' * 12, row))
+            print()
