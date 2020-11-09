@@ -47,16 +47,46 @@ class NeuralNetwork:
 
         return delta_by_activations
 
+
     def __sigmoid_function(self, z):
         return 1 / (1 + np.exp(-1 * z))
 
-    def __propagate_input(self, data):
+
+    def __calculate_J(self, weights, log=True):
+        partial_J = 0
+        activations_by_example = []
+        for i in range(len(self.data)):
+            activations = self.__propagate_input(self.data[i], log)
+
+            # Show prediction
+            predicted = self.predictions[-1]
+            # Calculate error
+            error = self.__calculate_error(predicted, self.outputs[i])
+            if log:
+                print(' ' * 4 + 'Procesando exemplo de treinamento', i + 1)
+                print(' ' * 4 + 'Propagando entrada: ', self.data[i])
+                print('\n%sf(x): %s' % (' ' * 8, predicted))
+                print(' ' * 4 + 'Saída predita para o exemplo %s: %s' % (i+1, predicted))
+                print(' ' * 4 + 'Saída esperada para o exemplo %s: %s' % (i+1, self.outputs[i]))
+                print(' ' * 4 + 'J do exemplo %s: %.3f\n' % (i+1, error))
+            partial_J += error
+            activations_by_example.append(activations.copy())
+
+        J = partial_J / len(self.data)
+        S = np.sum([np.sum(layer_weights) for layer_weights in (weights ** 2)])
+        S *= (self.reg_factor / (2 * len(self.data)))
+
+        return J + S, activations_by_example
+
+
+    def __propagate_input(self, data, log=True):
         activations = [[] for i in range(self.n_layers)]
 
         # Append bias term
         activations[0] = np.insert(data, 0, 1)
-        print('%sa%s: %s' % (' ' * 8, 1, data))
-        print('')
+        if log:
+            print('%sa%s: %s' % (' ' * 8, 1, data))
+            print('')
         # Run layer by layer
         for k in range(1, self.n_layers):
             z = np.dot(self.weights[k - 1], activations[k - 1])
@@ -68,11 +98,13 @@ class NeuralNetwork:
                 activations[k] = activations[k][1:]
                 self.predictions.append(a)
 
-            print('%sz%s: %s' % (' ' * 8, k + 1, z))
-            print('%sa%s: %s' % (' ' * 8, k + 1, activations[k]))
-            print('')
+            if log:
+                print('%sz%s: %s' % (' ' * 8, k + 1, z))
+                print('%sa%s: %s' % (' ' * 8, k + 1, activations[k]))
+                print('')
 
         return activations
+
 
     def test_backpropagation(self):
         print('Parâmetro de regularizacao lambda: %s\n' % self.reg_factor)
@@ -95,29 +127,9 @@ class NeuralNetwork:
 
         print('-------------------------------------------------------------')
         print('Calculando erro/custo J da rede')
-        J = 0
-        activations_by_example = []
-        for i in range(len(self.data)):
-            print(' ' * 4 + 'Procesando exemplo de treinamento', i + 1)
-            print(' ' * 4 + 'Propagando entrada: ', self.data[i])
-            activations = self.__propagate_input(self.data[i])
-
-            # Show prediction
-            predicted = self.predictions[-1]
-            print('\n%sf(x): %s' % (' ' * 8, predicted))
-            print(' ' * 4 + 'Saída predita para o exemplo %s: %s' % (i+1, predicted))
-            print(' ' * 4 + 'Saída esperada para o exemplo %s: %s' % (i+1, self.outputs[i]))
-            # Calculate error
-            error = self.__calculate_error(predicted, self.outputs[i])
-            print(' ' * 4 + 'J do exemplo %s: %.3f\n' % (i+1, error))
-            J += error
-            activations_by_example.append(activations.copy())
-
         # Total error with regularization
-        J = J / len(self.data)
-        S = np.sum([np.sum(layer_weights) for layer_weights in (self.weights_without_bias ** 2)])
-        S *= (self.reg_factor / (2 * len(self.data)))
-        print('J total do dataset (com regularizacao): %.5f\n\n' % (J + S))
+        J, activations_by_example = self.__calculate_J(self.weights_without_bias)
+        print('J total do dataset (com regularizacao): %.5f\n\n' % J)
 
         print('-------------------------------------------------------------')
         print('Rodando backpropagation')
@@ -167,4 +179,27 @@ class NeuralNetwork:
             gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
             for row in gradients_accumulated[i]:
                 print('%s%s' % (' ' * 12, row))
-            print()
+            print('\n')
+
+        print('-------------------------------------------------------------')
+        print('Rodando verificacao numerica de gradientes (epsilon=0.0000010000)')
+        epsilon = 0.000001
+        for i, weights in enumerate(self.weights):
+            plus_epsilon_array = []
+            minus_epsilon_array = []
+            for k in range(i):
+                plus_epsilon_array.append(self.weights[k])
+                minus_epsilon_array.append(self.weights[k])
+            plus_epsilon_array.append(weights + epsilon)
+            minus_epsilon_array.append(weights - epsilon)
+            for k in range(i + 1, len(self.weights)):
+                plus_epsilon_array.append(self.weights[k])
+                minus_epsilon_array.append(self.weights[k])
+            plus_epsilon_array = np.array(plus_epsilon_array)
+            minus_epsilon_array = np.array(minus_epsilon_array)
+            plus_epsilon, plus_activations = self.__calculate_J(plus_epsilon_array, False)
+            minus_epsilon, minus_activations = self.__calculate_J(minus_epsilon_array, False)
+            partial_estimation_gradient = ((plus_epsilon - minus_epsilon) / (2 * epsilon))
+
+
+

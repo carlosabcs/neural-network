@@ -36,5 +36,6 @@ def main():
     dataset_file = open(args.dataset, 'r')
     run_neural_network(network_file, initial_weights_file, dataset_file)
 
+
 if __name__ == "__main__":
     main()
