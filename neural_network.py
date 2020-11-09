@@ -6,7 +6,13 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
 
 class NeuralNetwork:
-    def __init__(self, network_file = None, initial_weights_file = None, dataset_file = None):
+    def __init__(
+        self,
+        target_attribute,
+        network_file = None,
+        initial_weights_file = None,
+        dataset_file = None
+    ):
         # TODO: Use random when config files don't exist
         # self.reg_factor = 1
         # self.input_layer_size = 0
@@ -14,6 +20,7 @@ class NeuralNetwork:
         # self.hidden_layers_sizes = []
         # self.data = []
         # self.outputs = []
+        self.target_attribute = target_attribute
         self.predictions = []
         if network_file:
             self.reg_factor,\

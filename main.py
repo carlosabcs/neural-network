@@ -4,6 +4,10 @@ import os
 import json
 import pandas as pd
 from neural_network import NeuralNetwork
+from cross_validator import CrossValidator
+
+
+DATA_PATH = './data/'
 
 
 def preprocess(df, types):
@@ -26,22 +30,24 @@ def preprocess(df, types):
 
 
 def main():
-    datasets = [
-        './data/house-votes-84',
-        './data/wine-recognition'
-    ]
+    parser = argparse.ArgumentParser(description='Multilayer neural network parser')
+    parser.add_argument('-d', '--dataset', help='The name (without extension) of the dataset', required=True)
+    args = parser.parse_args()
 
-    for dataset in datasets:
-        try:
-            with open(dataset + '.json', 'r') as filetypes:
-                types = json.load(filetypes)
-        except:
-            print('Dataset types not found, automatic types will be used.')
-            types = {}
-        df = pd.read_csv(dataset + '.tsv', sep='\t', dtype=types)
-        print(df)
-        df = preprocess(df, types)
-        print(df)
+    try:
+        with open(DATA_PATH + args.dataset + '.json', 'r') as filetypes:
+            types = json.load(filetypes)
+    except:
+        print('Dataset types not found, automatic types will be used.')
+        types = {}
+
+    df = preprocess(
+        pd.read_csv(DATA_PATH + args.dataset + '.tsv', sep='\t', dtype=types),
+        types
+    )
+    nn = NeuralNetwork('target')
+    cv = CrossValidator(nn)
+    cv.cross_validate(df, 5, 1)
 
 
 if __name__ == "__main__":
