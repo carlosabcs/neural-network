@@ -47,6 +47,33 @@ class NeuralNetwork:
 
         return delta_by_activations
 
+    def __sigmoid_function(self, z):
+        return 1 / (1 + np.exp(-1 * z))
+
+    def __propagate_input(self, data):
+        activations = [[] for i in range(self.n_layers)]
+
+        # Append bias term
+        activations[0] = np.insert(data, 0, 1)
+        print('%sa%s: %s' % (' ' * 8, 1, data))
+        print('')
+        # Run layer by layer
+        for k in range(1, self.n_layers):
+            z = np.dot(self.weights[k - 1], activations[k - 1])
+            a = self.__sigmoid_function(z)
+            activations[k] = np.concatenate(([1], a), axis=0)
+
+            if k == self.n_layers - 1:
+                # For the last layer
+                activations[k] = activations[k][1:]
+                self.predictions.append(a)
+
+            print('%sz%s: %s' % (' ' * 8, k + 1, z))
+            print('%sa%s: %s' % (' ' * 8, k + 1, activations[k]))
+            print('')
+
+        return activations
+
     def test_backpropagation(self):
         print('Parâmetro de regularizacao lambda: %s\n' % self.reg_factor)
         print(
@@ -70,31 +97,10 @@ class NeuralNetwork:
         print('Calculando erro/custo J da rede')
         J = 0
         activations_by_example = []
-        activations = [[] for i in range(self.n_layers)]
         for i in range(len(self.data)):
             print(' ' * 4 + 'Procesando exemplo de treinamento', i + 1)
             print(' ' * 4 + 'Propagando entrada: ', self.data[i])
-
-            # Append bias term
-            data = [np.insert(self.data[i], 0, 1)]
-            activations[0] = data[0]
-            print('%sa%s: %s' % (' ' * 8, 1, data[0]))
-            print('')
-            # Run layer by layer
-            for k in range(1, self.n_layers):
-                z = np.dot(self.weights[k - 1], data[k - 1])
-                a = 1 / (1 + np.exp(-1 * z))
-                activations[k] = np.concatenate(([1], a), axis=0)
-                from_index = 0
-                if k == self.n_layers - 1:
-                    # For the last layer
-                    self.predictions.append(a)
-                    from_index = 1
-                else:
-                    data.append(activations[k])
-                print('%sz%s: %s' % (' ' * 8, k + 1, z))
-                print('%sa%s: %s' % (' ' * 8, k + 1, activations[k][from_index:]))
-                print('')
+            activations = self.__propagate_input(self.data[i])
 
             # Show prediction
             predicted = self.predictions[-1]
