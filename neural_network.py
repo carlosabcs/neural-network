@@ -112,6 +112,54 @@ class NeuralNetwork:
 
         return activations
 
+    def __calculate_J2(self, data, target):
+        predicted = self.__propagate_input(data, False)[-1]
+        error = self.__calculate_error(predicted, target)
+
+        return error
+
+    def __calculate_numerical_gradient(self, e):
+        print("--------------------------------------------")
+        print("Rodando verificacao numerica de gradientes (epsilon=%.10f)" % e)
+        accumulated_gradients = None
+
+        for idx, data in enumerate(self.data):
+            gradients_by_data = []
+
+            for i in range(len(self.weights)):
+                matrix = []
+                for j in range(len(self.weights[i])):
+                    row = []
+                    for k in range(len(self.weights[i][j])):
+                        self.weights[i][j][k] = self.weights[i][j][k] + e
+                        first_out = self.__calculate_J2(data, self.outputs[idx])
+                        self.weights[i][j][k] = self.weights[i][j][k] - (2 * e)
+                        second_out = self.__calculate_J2(data, self.outputs[idx])
+                        self.weights[i][j][k] = self.weights[i][j][k] + e
+                        gradient = (first_out - second_out)/(2 * e)
+                        row.append(gradient)
+                    matrix.append(np.array(row))
+                gradients_by_data.append(np.array(matrix))
+            
+            gradients_by_data = np.array(gradients_by_data)
+            if accumulated_gradients == None:
+                accumulated_gradients = gradients_by_data.copy()
+            else:
+                accumulated_gradients = accumulated_gradients + gradients_by_data
+
+        accumulated_gradients = np.array(accumulated_gradients)
+        # Gradients with regularization
+        for i in range(self.n_layers - 1):
+            print('%sGradientes numerico de Theta%d:' %(' ' * 4, i + 1))
+            # Add a column with zeros instead of the bias column
+            new_weights = np.zeros(self.weights[i].shape)
+            new_weights[:,1:] = self.weights_without_bias[i]
+
+            P = self.reg_factor * new_weights
+            accumulated_gradients[i] = (accumulated_gradients[i] + P) / len(self.data)
+            for row in accumulated_gradients[i]:
+                print('%s%s' % (' ' * 8, row))
+            print()
 
     def test_backpropagation(self):
         print('Parâmetro de regularizacao lambda: %s\n' % self.reg_factor)
@@ -186,27 +234,10 @@ class NeuralNetwork:
             gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
             for row in gradients_accumulated[i]:
                 print('%s%s' % (' ' * 12, row))
-            print('\n')
+            print()
 
-        print('-------------------------------------------------------------')
-        print('Rodando verificacao numerica de gradientes (epsilon=0.0000010000)')
-        epsilon = 0.000001
-        for i, weights in enumerate(self.weights):
-            plus_epsilon_array = []
-            minus_epsilon_array = []
-            for k in range(i):
-                plus_epsilon_array.append(self.weights[k])
-                minus_epsilon_array.append(self.weights[k])
-            plus_epsilon_array.append(weights + epsilon)
-            minus_epsilon_array.append(weights - epsilon)
-            for k in range(i + 1, len(self.weights)):
-                plus_epsilon_array.append(self.weights[k])
-                minus_epsilon_array.append(self.weights[k])
-            plus_epsilon_array = np.array(plus_epsilon_array)
-            minus_epsilon_array = np.array(minus_epsilon_array)
-            plus_epsilon, plus_activations = self.__calculate_J(plus_epsilon_array, False)
-            minus_epsilon, minus_activations = self.__calculate_J(minus_epsilon_array, False)
-            partial_estimation_gradient = ((plus_epsilon - minus_epsilon) / (2 * epsilon))
+        # Run calculation of numerical gradients
+        self.__calculate_numerical_gradient(0.0000010000)
 
 
 
