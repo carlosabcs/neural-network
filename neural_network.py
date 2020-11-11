@@ -75,7 +75,7 @@ class NeuralNetwork:
             np.random.uniform(
                 low=-1,
                 high=1,
-                size=(self.hidden_layers_sizes[0] + 1, self.input_layer_size + 1)
+                size=(self.hidden_layers_sizes[0], self.input_layer_size + 1)
             )
         )
         weights_without_bias.append(
@@ -89,7 +89,7 @@ class NeuralNetwork:
                 np.random.uniform(
                     low=-1,
                     high=1,
-                    size=(self.hidden_layers_sizes[i+1] + 1, self.hidden_layers_sizes[i] + 1)
+                    size=(self.hidden_layers_sizes[i+1], self.hidden_layers_sizes[i] + 1)
                 )
             )
             weights_without_bias.append(
