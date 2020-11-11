@@ -32,6 +32,7 @@ def preprocess(df, types):
 def main():
     parser = argparse.ArgumentParser(description='Multilayer neural network parser')
     parser.add_argument('-d', '--dataset', help='The name (without extension) of the dataset', required=True)
+    parser.add_argument('-n', '--network', help='The filename of the network configuration', required=False)
     args = parser.parse_args()
 
     try:
@@ -45,8 +46,14 @@ def main():
         pd.read_csv(DATA_PATH + args.dataset + '.tsv', sep='\t', dtype=types),
         types
     )
-    nn = NeuralNetwork('target')
-    cv = CrossValidator(nn)
+    network_file = open(args.network, 'r')
+    cv = CrossValidator(
+        NeuralNetwork(
+            network_file=network_file,
+            target_attribute='target',
+            data_instance=df.iloc[0]
+        )
+    )
     cv.cross_validate(df, 5, 1)
 
 

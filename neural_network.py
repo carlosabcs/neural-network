@@ -8,10 +8,11 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 class NeuralNetwork:
     def __init__(
         self,
-        target_attribute,
-        network_file = None,
+        network_file,
+        data_instance = None,
         initial_weights_file = None,
-        dataset_file = None
+        dataset_file = None,
+        target_attribute = None
     ):
         # TODO: Use random when config files don't exist
         # self.reg_factor = 1
@@ -22,25 +23,98 @@ class NeuralNetwork:
         # self.outputs = []
         self.target_attribute = target_attribute
         self.predictions = []
-        if network_file:
-            self.reg_factor,\
-            self.input_layer_size,\
-            self.output_layer_size,\
-            self.hidden_layers_sizes = parse_network_configuration(network_file)
-            self.n_layers = 2 + len(self.hidden_layers_sizes)
+        self.batch_size = 64
+        self.reg_factor,\
+        self.input_layer_size,\
+        self.output_layer_size,\
+        self.hidden_layers_sizes = parse_network_configuration(network_file)
+        self.n_hidden_layers = len(self.hidden_layers_sizes)
+        self.n_layers = 2 + len(self.hidden_layers_sizes)
+
+        if data_instance is not None:
+            self.input_layer_size = data_instance.shape[0] - 1 # Minus target attribute
+            self.output_layer_size = 1 # Just one neuron at the output
 
         if initial_weights_file:
             self.weights, self.weights_without_bias = parse_initial_weights(initial_weights_file)
+        else:
+            self.__initialize_random_weights()
 
         if dataset_file:
             self.data, self.outputs = parse_dataset_file(dataset_file)
 
 
+    def __split_dataframe(self, data):
+        inputs = data.drop([self.target_attribute], axis=1).values
+        outputs = data[self.target_attribute].values
+        return inputs, outputs
+
+
+    def fit(self, data):
+        self.data, self.outputs = self.__split_dataframe(data)
+        # TODO: reemplazar esto por un criterio de parada mejor definido
+        for it in range(300):
+            error, hit_count =  0.0, 0
+            for i in range(int(len(self.data) / self.batch_size)): # batch by batch
+                start, end = self.batch_size * i, self.batch_size * (i + 1)
+                J, activations_by_example = self.__calculate_J(
+                    self.data[start:end],
+                    self.outputs[start:end],
+                    self.weights_without_bias,
+                    False
+                )
+
+        return 1
+
+
+    def __initialize_random_weights(self):
+        weights = []
+        weights_without_bias = []
+        # First layer -> hidden_0 * input_size
+        weights.append(
+            np.random.uniform(
+                low=-1,
+                high=1,
+                size=(self.hidden_layers_sizes[0] + 1, self.input_layer_size + 1)
+            )
+        )
+        weights_without_bias.append(
+            weights[-1][:, 1:]
+        )
+
+
+        # Intermediate layers -> hidden_i+1 * hidden_i
+        for i in range(0, len(self.hidden_layers_sizes) - 1):
+            weights.append(
+                np.random.uniform(
+                    low=-1,
+                    high=1,
+                    size=(self.hidden_layers_sizes[i+1] + 1, self.hidden_layers_sizes[i] + 1)
+                )
+            )
+            weights_without_bias.append(
+                weights[-1][:, 1:]
+            )
+
+        #  Last layer -> output_size * self.hidden_layers_sizes[i]
+        weights.append(
+            np.random.uniform(
+                low=-1,
+                high=1,
+                size=(self.output_layer_size, self.hidden_layers_sizes[-1] + 1)
+            )
+        )
+        weights_without_bias.append(
+            weights[-1][:, 1:]
+        )
+        self.weights = np.array(weights)
+        self.weights_without_bias = np.array(weights_without_bias)
+
+
     def __calculate_error(self, predicted, target):
-        # changed by Claudia
+        # Changed by Claudia
         first_mult = np.multiply((-1 * target), np.log(predicted))
         second_mult = np.multiply((1 - target), np.log(1 - predicted))
-
         return np.sum(first_mult - second_mult)
 
 
@@ -59,29 +133,34 @@ class NeuralNetwork:
         return 1 / (1 + np.exp(-1 * z))
 
 
-    def __calculate_J(self, weights, log=True):
+    def __calculate_J(
+        self,
+        data,
+        outputs,
+        weights,
+        log=True
+    ):
         partial_J = 0
         activations_by_example = []
-        for i in range(len(self.data)):
-            activations = self.__propagate_input(self.data[i], log)
-
+        for i in range(len(data)):
+            activations = self.__propagate_input(data[i], log)
             # Show prediction
             predicted = self.predictions[-1]
             # Calculate error
-            error = self.__calculate_error(predicted, self.outputs[i])
+            error = self.__calculate_error(predicted, outputs[i])
             if log:
                 print(' ' * 4 + 'Procesando exemplo de treinamento', i + 1)
-                print(' ' * 4 + 'Propagando entrada: ', self.data[i])
+                print(' ' * 4 + 'Propagando entrada: ', data[i])
                 print('\n%sf(x): %s' % (' ' * 8, predicted))
                 print(' ' * 4 + 'Saída predita para o exemplo %s: %s' % (i+1, predicted))
-                print(' ' * 4 + 'Saída esperada para o exemplo %s: %s' % (i+1, self.outputs[i]))
+                print(' ' * 4 + 'Saída esperada para o exemplo %s: %s' % (i+1, outputs[i]))
                 print(' ' * 4 + 'J do exemplo %s: %.3f\n' % (i+1, error))
             partial_J += error
             activations_by_example.append(activations.copy())
 
-        J = partial_J / len(self.data)
+        J = partial_J / len(data)
         S = np.sum([np.sum(layer_weights) for layer_weights in (weights ** 2)])
-        S *= (self.reg_factor / (2 * len(self.data)))
+        S *= (self.reg_factor / (2 * len(data)))
 
         return J + S, activations_by_example
 
@@ -96,6 +175,8 @@ class NeuralNetwork:
             print('')
         # Run layer by layer
         for k in range(1, self.n_layers):
+            print(self.weights[k-1].shape)
+            print(activations[k-1].shape)
             z = np.dot(self.weights[k - 1], activations[k - 1])
             a = self.__sigmoid_function(z)
             activations[k] = np.concatenate(([1], a), axis=0)
@@ -135,7 +216,7 @@ class NeuralNetwork:
         print('-------------------------------------------------------------')
         print('Calculando erro/custo J da rede')
         # Total error with regularization
-        J, activations_by_example = self.__calculate_J(self.weights_without_bias)
+        J, activations_by_example = self.__calculate_J(self.data, self.outputs, self.weights_without_bias)
         print('J total do dataset (com regularizacao): %.5f\n\n' % J)
 
         print('-------------------------------------------------------------')
@@ -204,8 +285,8 @@ class NeuralNetwork:
                 minus_epsilon_array.append(self.weights[k])
             plus_epsilon_array = np.array(plus_epsilon_array)
             minus_epsilon_array = np.array(minus_epsilon_array)
-            plus_epsilon, plus_activations = self.__calculate_J(plus_epsilon_array, False)
-            minus_epsilon, minus_activations = self.__calculate_J(minus_epsilon_array, False)
+            plus_epsilon, plus_activations = self.__calculate_J(self.data, self.outputs, plus_epsilon_array, False)
+            minus_epsilon, minus_activations = self.__calculate_J(self.data, self.outputs, minus_epsilon_array, False)
             partial_estimation_gradient = ((plus_epsilon - minus_epsilon) / (2 * epsilon))
 
 

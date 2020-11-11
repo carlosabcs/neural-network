@@ -5,7 +5,11 @@ from neural_network import NeuralNetwork
 
 
 def run_neural_network(network_file, initial_weights_file, dataset_file):
-    nn = NeuralNetwork(network_file, initial_weights_file, dataset_file)
+    nn = NeuralNetwork(
+        network_file=network_file,
+        initial_weights_file=initial_weights_file,
+        dataset_file=dataset_file
+    )
     nn.test_backpropagation()
 
 
