@@ -53,16 +53,58 @@ class NeuralNetwork:
     def fit(self, data):
         self.data, self.outputs = self.__split_dataframe(data)
         # TODO: reemplazar esto por un criterio de parada mejor definido
-        for it in range(300):
-            error, hit_count =  0.0, 0
-            for i in range(int(len(self.data) / self.batch_size)): # batch by batch
-                start, end = self.batch_size * i, self.batch_size * (i + 1)
+        for it in range(1):
+            for batch_i in range(int(len(self.data) / self.batch_size)): # batch by batch
+                error, hit_count =  0.0, 0
+                start, end = self.batch_size * batch_i, self.batch_size * (batch_i + 1)
+                self.predictions = []
+                data_batch = self.data[start:end]
+                outputs_batch = self.outputs[start:end]
                 J, activations_by_example = self.__calculate_J(
-                    self.data[start:end],
-                    self.outputs[start:end],
+                    data_batch,
+                    outputs_batch,
                     self.weights_without_bias,
                     False
                 )
+
+                gradients_accumulated = [[] for i in range(self.n_layers)]
+                gradients = [[] for i in range(self.n_layers)]
+                for i in range(len(data_batch)):
+                    # Get current score:
+                    error += ((self.predictions[i] - outputs_batch[i]) ** 2)
+                    # Increment hit count:
+                    hit_count += int(self.predictions[i] == outputs_batch[i])
+                    deltas = [[] for j in range(self.n_layers)]
+                    for k in range(self.n_layers, 1, -1):
+                        if k == self.n_layers:
+                            # Output layer deltas
+                            deltas[k - 1] = self.predictions[i] - outputs_batch[i]
+                        else:
+                            # Deltas for hidden layers
+                            deltas[k - 1] = np.multiply(
+                                np.multiply(
+                                    np.dot(np.transpose(self.weights[k - 1]), deltas[k]),
+                                    activations_by_example[i][k - 1]
+                                ),
+                                ( 1 - activations_by_example[i][k - 1] )
+                            )
+                            deltas[k - 1] = deltas[k - 1][1:]
+
+                        gradients[k - 2] = self.__calculate_gradient(activations_by_example[i][k - 2], deltas[k - 1])
+                        if gradients_accumulated[k - 2] == []:
+                            gradients_accumulated[k - 2] = gradients[k - 2]
+                        else:
+                            gradients_accumulated[k - 2] = gradients_accumulated[k - 2] + gradients[k - 2]
+
+                print('Batch %s, error: %.4f, accuracy: %.4f' % (batch_i, error / self.batch_size, hit_count / self.batch_size))
+                for i in range(self.n_layers - 1):
+                    # Add a column with zeros instead of the bias column
+                    new_weights = np.zeros(self.weights[i].shape)
+                    new_weights[:,1:] = self.weights_without_bias[i]
+
+                    P = self.reg_factor * new_weights
+                    gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
+                    # TODO: aquí se actualizarían los pesos?
 
         return 1
 
