@@ -241,38 +241,36 @@ class NeuralNetwork:
         print("--------------------------------------------")
         print("Rodando verificacao numerica de gradientes (epsilon=%.10f)" % e)
         accumulated_gradients = None
-
+        
         for idx, data in enumerate(self.data):
             gradients_by_data = []
-
             for i in range(len(self.weights)):
-                matrix = []
+                matrix = np.zeros(self.weights[i].shape)
                 for j in range(len(self.weights[i])):
-                    row = []
                     for k in range(len(self.weights[i][j])):
                         self.weights[i][j][k] = self.weights[i][j][k] + e
                         first_out = self.__calculate_J2(data, self.outputs[idx])
                         self.weights[i][j][k] = self.weights[i][j][k] - (2 * e)
                         second_out = self.__calculate_J2(data, self.outputs[idx])
                         self.weights[i][j][k] = self.weights[i][j][k] + e
-                        gradient = (first_out - second_out)/(2 * e)
-                        row.append(gradient)
-                    matrix.append(np.array(row))
-                gradients_by_data.append(np.array(matrix))
-
+                        #Calculate gradient
+                        matrix[j][k]= (first_out - second_out)/(2 * e)
+                gradients_by_data.append(matrix)
             gradients_by_data = np.array(gradients_by_data)
+            
             if accumulated_gradients == None:
                 accumulated_gradients = gradients_by_data.copy()
             else:
                 accumulated_gradients = accumulated_gradients + gradients_by_data
 
         accumulated_gradients = np.array(accumulated_gradients)
+        
         # Gradients with regularization
-        for i in range(self.n_layers - 1):
+        for i in range(len(accumulated_gradients)):
             print('%sGradientes numerico de Theta%d:' %(' ' * 4, i + 1))
             # Add a column with zeros instead of the bias column
-            new_weights = np.zeros(self.weights[i].shape)
-            new_weights[:,1:] = self.weights_without_bias[i]
+            new_weights = np.zeros(accumulated_gradients[i].shape)
+            new_weights[:,1:] = self.weights_without_bias[i].copy()
 
             P = self.reg_factor * new_weights
             accumulated_gradients[i] = (accumulated_gradients[i] + P) / len(self.data)
