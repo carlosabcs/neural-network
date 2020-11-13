@@ -14,5 +14,6 @@
   "superfund-right-to-sue": "str",
   "crime": "str",
   "duty-free-exports": "str",
-  "export-administration-act-south-africa": "str"
+  "export-administration-act-south-africa": "str",
+  "target": "str"
 }

@@ -17,11 +17,13 @@ class CrossValidator():
         Gets k stratified folds from data
         '''
         # Get subsets based on the target class
-        outcomes = data[self.target_attribute].unique()
+        # outcomes = [attr.replace(self.model.target_attribute + '_', '') for attr in self.model.target_attributes]
+        # print(outcomes)
+        # outcomes = data[self.target_attribute].unique()
 
         splitted_folds = []
-        for i, outcome in enumerate(outcomes):
-            subset = data[data[self.target_attribute] == outcome]
+        for i, target_attribute in enumerate(self.model.target_attributes):
+            subset = data[data[target_attribute] == 1]
             # Split the subsets into stratified sub-subsets
             splitted_folds.append(
                 np.split(
@@ -29,15 +31,35 @@ class CrossValidator():
                     [ int((1 / k) * i * len(subset)) for i in range(1, k) ]
                 )
             )
+
         # Concat stratified subsets to create stratified sets
         folds = []
         for i in range(k):
             stratified_subsets = []
-            for k in range(len(outcomes)):
+            for k in range(len(self.model.target_attributes)):
                 stratified_subsets.append(splitted_folds[k][i])
             folds.append(
                 pd.concat(stratified_subsets)
             )
+
+        # for i, outcome in enumerate(outcomes):
+        #     subset = data[data[self.target_attribute] == outcome]
+        #     # Split the subsets into stratified sub-subsets
+        #     splitted_folds.append(
+        #         np.split(
+        #             subset.sample(frac=1),
+        #             [ int((1 / k) * i * len(subset)) for i in range(1, k) ]
+        #         )
+        #     )
+        # # Concat stratified subsets to create stratified sets
+        # folds = []
+        # for i in range(k):
+        #     stratified_subsets = []
+        #     for k in range(len(outcomes)):
+        #         stratified_subsets.append(splitted_folds[k][i])
+        #     folds.append(
+        #         pd.concat(stratified_subsets)
+        #     )
         return folds
 
 

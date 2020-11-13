@@ -14,13 +14,6 @@ class NeuralNetwork:
         dataset_file = None,
         target_attribute = None
     ):
-        # TODO: Use random when config files don't exist
-        # self.reg_factor = 1
-        # self.input_layer_size = 0
-        # self.output_layer_size = 0
-        # self.hidden_layers_sizes = []
-        # self.data = []
-        # self.outputs = []
         self.target_attribute = target_attribute
         self.predictions = []
         self.batch_size = 64
@@ -32,8 +25,11 @@ class NeuralNetwork:
         self.n_layers = 2 + len(self.hidden_layers_sizes)
 
         if data_instance is not None:
-            self.input_layer_size = data_instance.shape[0] - 1 # Minus target attribute
-            self.output_layer_size = 1 # Just one neuron at the output
+            self.target_attributes = [ # The same number as target attribute columns
+                col for col in data_instance.index if col.startswith(self.target_attribute)
+            ]
+            self.output_layer_size = len(self.target_attributes)
+            self.input_layer_size = data_instance.shape[0] - self.output_layer_size # Minus target attributes
 
         if initial_weights_file:
             self.weights, self.weights_without_bias = parse_initial_weights(initial_weights_file)
@@ -45,13 +41,16 @@ class NeuralNetwork:
 
 
     def __split_dataframe(self, data):
-        inputs = data.drop([self.target_attribute], axis=1).values
-        outputs = data[self.target_attribute].values
+        inputs = data.drop(self.target_attributes, axis=1).values
+        outputs = data[self.target_attributes].values
         return inputs, outputs
 
 
     def fit(self, data):
         self.data, self.outputs = self.__split_dataframe(data)
+        # Esto es una prueba de que está balanceado
+        for i in range(len(self.outputs[0])):
+            print(i + 1, ":", len([out for out in self.outputs[:, i] if out == 1]))
         # TODO: reemplazar esto por un criterio de parada mejor definido
         for it in range(1):
             for batch_i in range(int(len(self.data) / self.batch_size)): # batch by batch
@@ -105,7 +104,6 @@ class NeuralNetwork:
                     P = self.reg_factor * new_weights
                     gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
                     # TODO: aquí se actualizarían los pesos?
-
         return 1
 
 
