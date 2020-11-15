@@ -46,13 +46,23 @@ class NeuralNetwork:
         return inputs, outputs
 
 
+    def __indexOfGreatestValue(self, array):
+        max_value = -1
+        ind_value = -1
+        for i, value in enumerate(array):
+            if value > max_value:
+                max_value = value
+                ind_value = i
+        return ind_value
+            
+        
     def fit(self, data):
         self.data, self.outputs = self.__split_dataframe(data)
         # Esto es una prueba de que está balanceado
         for i in range(len(self.outputs[0])):
             print(i + 1, ":", len([out for out in self.outputs[:, i] if out == 1]))
         # TODO: reemplazar esto por un criterio de parada mejor definido
-        for it in range(1):
+        for it in range(100):
             for batch_i in range(int(len(self.data) / self.batch_size)): # batch by batch
                 error, hit_count =  0.0, 0
                 start, end = self.batch_size * batch_i, self.batch_size * (batch_i + 1)
@@ -70,9 +80,11 @@ class NeuralNetwork:
                 gradients = [[] for i in range(self.n_layers)]
                 for i in range(len(data_batch)):
                     # Get current score:
-                    error += ((self.predictions[i] - outputs_batch[i]) ** 2)
+                    error += np.sum((self.predictions[i] - outputs_batch[i]) ** 2)
                     # Increment hit count:
-                    hit_count += int(self.predictions[i] == outputs_batch[i])
+                    index_predicted = self.__indexOfGreatestValue(self.predictions[i])
+                    index_expected = self.__indexOfGreatestValue(outputs_batch[i])
+                    hit_count += int(index_predicted == index_expected)
                     deltas = [[] for j in range(self.n_layers)]
                     for k in range(self.n_layers, 1, -1):
                         if k == self.n_layers:
@@ -96,6 +108,7 @@ class NeuralNetwork:
                             gradients_accumulated[k - 2] = gradients_accumulated[k - 2] + gradients[k - 2]
 
                 print('Batch %s, error: %.4f, accuracy: %.4f' % (batch_i, error / self.batch_size, hit_count / self.batch_size))
+                
                 for i in range(self.n_layers - 1):
                     # Add a column with zeros instead of the bias column
                     new_weights = np.zeros(self.weights[i].shape)
@@ -103,9 +116,27 @@ class NeuralNetwork:
 
                     P = self.reg_factor * new_weights
                     gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
-                    # TODO: aquí se actualizarían los pesos?
-        return 1
 
+                # Update weights
+                gradients_accumulated = np.array(gradients_accumulated)
+                self.weights = self.weights - gradients_accumulated[:-1]
+                self.weights_without_bias = self.weights.copy()
+                for i in range(len(self.weights_without_bias)):
+                    self.weights_without_bias[i] = self.weights_without_bias[i][:,1:] 
+
+    def predict(self, data):
+        self.data, self.outputs = self.__split_dataframe(data)
+        hit_count = 0
+        
+        for idx, instance in enumerate(self.data):
+            predicted = self.__propagate_input(instance, False)[-1]
+            index_predicted = self.__indexOfGreatestValue(predicted)
+            index_expected = self.__indexOfGreatestValue(self.outputs[idx])
+            hit_count += int(index_predicted == index_expected) 
+        
+        accuracy = hit_count / len(self.data)
+        print('Accuracy = %.4f' % (accuracy))
+        return accuracy, hit_count
 
     def __initialize_random_weights(self):
         weights = []

@@ -87,7 +87,7 @@ class CrossValidator():
 
                 # Test data is composed by current fold
                 test_data = folds[i]
-                # accuracy, _ = self.model.predict(test_data)
+                accuracy, _ = self.model.predict(test_data)
                 # acc_list.append(accuracy)
                 # global_acc_list.append(accuracy)
             # print('\nAverage accuracy: %.3f (%.3f)\n' % (
