@@ -13,6 +13,18 @@ def parse_network_configuration(network_file):
     return reg_factor, input_layer_size, output_layer_size, hidden_layers_sizes
 
 
+def parse_network_configuration_for_dataset(network_file):
+    lines = network_file.readlines()
+    reg_factor = float(lines[0])
+    alpha = float(lines[1])
+    batch_size = int(lines[2])
+    try:
+        hidden_layers_sizes = [int(line) for line in lines[3:]]
+    except:
+        hidden_layers_sizes = []
+    return reg_factor, alpha, batch_size, hidden_layers_sizes
+
+
 def parse_initial_weights(initial_weights_file):
     lines = initial_weights_file.readlines()
     layers_weights = []

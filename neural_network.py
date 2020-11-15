@@ -16,20 +16,26 @@ class NeuralNetwork:
     ):
         self.target_attribute = target_attribute
         self.predictions = []
-        self.batch_size = 64
-        self.reg_factor,\
-        self.input_layer_size,\
-        self.output_layer_size,\
-        self.hidden_layers_sizes = parse_network_configuration(network_file)
-        self.n_hidden_layers = len(self.hidden_layers_sizes)
-        self.n_layers = 2 + len(self.hidden_layers_sizes)
 
         if data_instance is not None:
             self.target_attributes = [ # The same number as target attribute columns
                 col for col in data_instance.index if col.startswith(self.target_attribute)
             ]
+            self.reg_factor,\
+            self.alpha,\
+            self.batch_size,\
+            self.hidden_layers_sizes = parse_network_configuration_for_dataset(network_file)
             self.output_layer_size = len(self.target_attributes)
             self.input_layer_size = data_instance.shape[0] - self.output_layer_size # Minus target attributes
+            self.n_hidden_layers = len(self.hidden_layers_sizes)
+            self.n_layers = 2 + len(self.hidden_layers_sizes)
+        else:
+            self.reg_factor,\
+            self.input_layer_size,\
+            self.output_layer_size,\
+            self.hidden_layers_sizes = parse_network_configuration(network_file)
+            self.n_hidden_layers = len(self.hidden_layers_sizes)
+            self.n_layers = 2 + len(self.hidden_layers_sizes)
 
         if initial_weights_file:
             self.weights, self.weights_without_bias = parse_initial_weights(initial_weights_file)
@@ -54,8 +60,8 @@ class NeuralNetwork:
                 max_value = value
                 ind_value = i
         return ind_value
-            
-        
+
+
     def fit(self, data):
         self.data, self.outputs = self.__split_dataframe(data)
         # Esto es una prueba de que está balanceado
@@ -108,7 +114,7 @@ class NeuralNetwork:
                             gradients_accumulated[k - 2] = gradients_accumulated[k - 2] + gradients[k - 2]
 
                 print('Batch %s, error: %.4f, accuracy: %.4f' % (batch_i, error / self.batch_size, hit_count / self.batch_size))
-                
+
                 for i in range(self.n_layers - 1):
                     # Add a column with zeros instead of the bias column
                     new_weights = np.zeros(self.weights[i].shape)
@@ -119,24 +125,24 @@ class NeuralNetwork:
 
                 # Update weights
                 gradients_accumulated = np.array(gradients_accumulated)
-                self.weights = self.weights - gradients_accumulated[:-1]
+                self.weights = self.weights - (0.01 * gradients_accumulated[:-1])
                 self.weights_without_bias = self.weights.copy()
                 for i in range(len(self.weights_without_bias)):
-                    self.weights_without_bias[i] = self.weights_without_bias[i][:,1:] 
+                    self.weights_without_bias[i] = self.weights_without_bias[i][:,1:]
+
 
     def predict(self, data):
         self.data, self.outputs = self.__split_dataframe(data)
         hit_count = 0
-        
         for idx, instance in enumerate(self.data):
             predicted = self.__propagate_input(instance, False)[-1]
             index_predicted = self.__indexOfGreatestValue(predicted)
             index_expected = self.__indexOfGreatestValue(self.outputs[idx])
-            hit_count += int(index_predicted == index_expected) 
-        
+            hit_count += int(index_predicted == index_expected)
         accuracy = hit_count / len(self.data)
         print('Accuracy = %.4f' % (accuracy))
         return accuracy, hit_count
+
 
     def __initialize_random_weights(self):
         weights = []
@@ -152,6 +158,7 @@ class NeuralNetwork:
         weights_without_bias.append(
             weights[-1][:, 1:]
         )
+        print(weights[-1].shape)
 
 
         # Intermediate layers -> hidden_i+1 * hidden_i
@@ -166,6 +173,7 @@ class NeuralNetwork:
             weights_without_bias.append(
                 weights[-1][:, 1:]
             )
+            print(weights[-1].shape)
 
         #  Last layer -> output_size * self.hidden_layers_sizes[i]
         weights.append(
@@ -175,6 +183,7 @@ class NeuralNetwork:
                 size=(self.output_layer_size, self.hidden_layers_sizes[-1] + 1)
             )
         )
+        print(weights[-1].shape)
         weights_without_bias.append(
             weights[-1][:, 1:]
         )
@@ -272,7 +281,7 @@ class NeuralNetwork:
         print("--------------------------------------------")
         print("Rodando verificacao numerica de gradientes (epsilon=%.10f)" % e)
         accumulated_gradients = None
-        
+
         for idx, data in enumerate(self.data):
             gradients_by_data = []
             for i in range(len(self.weights)):
@@ -288,14 +297,14 @@ class NeuralNetwork:
                         matrix[j][k]= (first_out - second_out)/(2 * e)
                 gradients_by_data.append(matrix)
             gradients_by_data = np.array(gradients_by_data)
-            
+
             if accumulated_gradients == None:
                 accumulated_gradients = gradients_by_data.copy()
             else:
                 accumulated_gradients = accumulated_gradients + gradients_by_data
 
         accumulated_gradients = np.array(accumulated_gradients)
-        
+
         # Gradients with regularization
         for i in range(len(accumulated_gradients)):
             print('%sGradientes numerico de Theta%d:' %(' ' * 4, i + 1))
