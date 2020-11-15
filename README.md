@@ -17,7 +17,7 @@ The script receives a set of arguments:
   hidden_layer_1_size (int)
   ...
   hidden_layer_n_size (int)
-  output_layer_size
+  output_layer_size (int)
   ```
   An example in this project is the file `network.txt`.
 - `--initial_weights`: the file with the initial weights to be used in the neural network trainning. That file has the structure:
@@ -45,10 +45,10 @@ The script `main.py` trains and tests the multilayer neural network algorithm us
   regularization_factor (float)
   alpha (float)
   batch_size (int)
-  hidden_layer_0_size
-  hidden_layer_1_size
+  hidden_layer_0_size (int)
+  hidden_layer_1_size (int)
   ...
-  hidden_layer_n_size
+  hidden_layer_n_size (int)
   ```
   The file `network_v2.txt` is a example of this type of configuration.
 
