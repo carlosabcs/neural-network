@@ -39,8 +39,6 @@ class NeuralNetwork:
 
         if initial_weights_file:
             self.weights, self.weights_without_bias = parse_initial_weights(initial_weights_file)
-        else:
-            self.__initialize_random_weights()
 
         if dataset_file:
             self.data, self.outputs = parse_dataset_file(dataset_file)
@@ -63,14 +61,15 @@ class NeuralNetwork:
 
 
     def fit(self, data):
+        self.__initialize_random_weights() # Reset weights
         self.data, self.outputs = self.__split_dataframe(data)
         # Esto es una prueba de que está balanceado
         for i in range(len(self.outputs[0])):
             print(i + 1, ":", len([out for out in self.outputs[:, i] if out == 1]))
         # TODO: reemplazar esto por un criterio de parada mejor definido
         for it in range(100):
+            error, hit_count, n_measures =  0.0, 0, 0
             for batch_i in range(int(len(self.data) / self.batch_size)): # batch by batch
-                error, hit_count =  0.0, 0
                 start, end = self.batch_size * batch_i, self.batch_size * (batch_i + 1)
                 self.predictions = []
                 data_batch = self.data[start:end]
@@ -91,6 +90,7 @@ class NeuralNetwork:
                     index_predicted = self.__indexOfGreatestValue(self.predictions[i])
                     index_expected = self.__indexOfGreatestValue(outputs_batch[i])
                     hit_count += int(index_predicted == index_expected)
+                    n_measures += 1
                     deltas = [[] for j in range(self.n_layers)]
                     for k in range(self.n_layers, 1, -1):
                         if k == self.n_layers:
@@ -113,8 +113,6 @@ class NeuralNetwork:
                         else:
                             gradients_accumulated[k - 2] = gradients_accumulated[k - 2] + gradients[k - 2]
 
-                print('Batch %s, error: %.4f, accuracy: %.4f' % (batch_i, error / self.batch_size, hit_count / self.batch_size))
-
                 for i in range(self.n_layers - 1):
                     # Add a column with zeros instead of the bias column
                     new_weights = np.zeros(self.weights[i].shape)
@@ -129,6 +127,8 @@ class NeuralNetwork:
                 self.weights_without_bias = self.weights.copy()
                 for i in range(len(self.weights_without_bias)):
                     self.weights_without_bias[i] = self.weights_without_bias[i][:,1:]
+
+            print('Iteration %s, error: %.4f, accuracy: %.4f' % (it + 1, error / n_measures, hit_count / n_measures))
 
 
     def predict(self, data):
@@ -145,6 +145,7 @@ class NeuralNetwork:
 
 
     def __initialize_random_weights(self):
+        print("REINICIALIZANDO PESOS ALEATORIOS")
         weights = []
         weights_without_bias = []
         # First layer -> hidden_0 * input_size
@@ -158,7 +159,7 @@ class NeuralNetwork:
         weights_without_bias.append(
             weights[-1][:, 1:]
         )
-        print(weights[-1].shape)
+        # print(weights[-1].shape)
 
 
         # Intermediate layers -> hidden_i+1 * hidden_i
@@ -173,7 +174,7 @@ class NeuralNetwork:
             weights_without_bias.append(
                 weights[-1][:, 1:]
             )
-            print(weights[-1].shape)
+            # print(weights[-1].shape)
 
         #  Last layer -> output_size * self.hidden_layers_sizes[i]
         weights.append(
@@ -183,7 +184,7 @@ class NeuralNetwork:
                 size=(self.output_layer_size, self.hidden_layers_sizes[-1] + 1)
             )
         )
-        print(weights[-1].shape)
+        # print(weights[-1].shape)
         weights_without_bias.append(
             weights[-1][:, 1:]
         )
