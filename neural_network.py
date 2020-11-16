@@ -1,6 +1,3 @@
-# from files_parser import parse_dataset_file
-# from files_parser import parse_network_configuration
-# from files_parser import parse_initial_weights
 from files_parser import *
 np.set_printoptions(formatter={'float': lambda x: "{0:0.5f}".format(x)})
 
@@ -63,11 +60,8 @@ class NeuralNetwork:
     def fit(self, data):
         self.__initialize_random_weights() # Reset weights
         self.data, self.outputs = self.__split_dataframe(data)
-        # Esto es una prueba de que está balanceado
-        for i in range(len(self.outputs[0])):
-            print(i + 1, ":", len([out for out in self.outputs[:, i] if out == 1]))
         # TODO: reemplazar esto por un criterio de parada mejor definido
-        for it in range(100):
+        for it in range(500):
             error, hit_count, n_measures =  0.0, 0, 0
             for batch_i in range(int(len(self.data) / self.batch_size)): # batch by batch
                 start, end = self.batch_size * batch_i, self.batch_size * (batch_i + 1)
@@ -128,7 +122,8 @@ class NeuralNetwork:
                 for i in range(len(self.weights_without_bias)):
                     self.weights_without_bias[i] = self.weights_without_bias[i][:,1:]
 
-            print('Iteration %s, error: %.4f, accuracy: %.4f' % (it + 1, error / n_measures, hit_count / n_measures))
+            if ((it + 1) % 50 == 0):
+                print('Iteration %s, error: %.5f, accuracy: %.5f' % (it + 1, error / n_measures, hit_count / n_measures))
 
 
     def predict(self, data):
@@ -140,12 +135,11 @@ class NeuralNetwork:
             index_expected = self.__indexOfGreatestValue(self.outputs[idx])
             hit_count += int(index_predicted == index_expected)
         accuracy = hit_count / len(self.data)
-        print('Accuracy = %.4f' % (accuracy))
+        print('Test accuracy = %.5f\n' % (accuracy))
         return accuracy, hit_count
 
 
     def __initialize_random_weights(self):
-        print("REINICIALIZANDO PESOS ALEATORIOS")
         weights = []
         weights_without_bias = []
         # First layer -> hidden_0 * input_size
@@ -159,7 +153,6 @@ class NeuralNetwork:
         weights_without_bias.append(
             weights[-1][:, 1:]
         )
-        # print(weights[-1].shape)
 
 
         # Intermediate layers -> hidden_i+1 * hidden_i
@@ -174,7 +167,6 @@ class NeuralNetwork:
             weights_without_bias.append(
                 weights[-1][:, 1:]
             )
-            # print(weights[-1].shape)
 
         #  Last layer -> output_size * self.hidden_layers_sizes[i]
         weights.append(
@@ -184,7 +176,6 @@ class NeuralNetwork:
                 size=(self.output_layer_size, self.hidden_layers_sizes[-1] + 1)
             )
         )
-        # print(weights[-1].shape)
         weights_without_bias.append(
             weights[-1][:, 1:]
         )
