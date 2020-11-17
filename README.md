@@ -210,3 +210,7 @@ The script `main.py` trains and tests the multilayer neural network algorithm us
 - Running the Multilayer Neural Network with a dataset
 
   `python main.py -d house-votes-84 -n network_v2.txt`
+
+# Observations
+
+- For some unknown reason, `numpy` is blocking us for using the size 2 for the first hidden layer on the neural network. So please avoid doing tests with a configuration that uses that size for the first hidden layer.
