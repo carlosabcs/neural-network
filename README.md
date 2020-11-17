@@ -1,6 +1,6 @@
 # Multilayer Neural Network
 
-*This implementation is part of the course CMP263 Machine Learning, from Instituto de Informática (UFRGS)*
+*This implementation is part of the course CMP263 Machine Learning, from Instituto de Informática (INF) - UFRGS*
 
 ## Installation
 This project requires two libraries which can be installed by running: `pip install pandas numpy`
