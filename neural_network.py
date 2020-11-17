@@ -61,8 +61,10 @@ class NeuralNetwork:
         self.__initialize_random_weights() # Reset weights
         self.data, self.outputs = self.__split_dataframe(data)
         # TODO: reemplazar esto por un criterio de parada mejor definido
-        for it in range(500):
+        for it in range(1000):
             error, hit_count, n_measures =  0.0, 0, 0
+            
+            gradients_accumulated = [[] for i in range(self.n_layers)]
             for batch_i in range(int(len(self.data) / self.batch_size)): # batch by batch
                 start, end = self.batch_size * batch_i, self.batch_size * (batch_i + 1)
                 self.predictions = []
@@ -75,14 +77,19 @@ class NeuralNetwork:
                     False
                 )
 
-                gradients_accumulated = [[] for i in range(self.n_layers)]
                 gradients = [[] for i in range(self.n_layers)]
                 for i in range(len(data_batch)):
+                    index_predicted = self.__indexOfGreatestValue(self.predictions[i])
+                    index_expected = self.__indexOfGreatestValue(outputs_batch[i])
+                    for idx in range(len(self.predictions[i])):
+                        if idx == index_predicted:
+                            self.predictions[i][idx] = 1
+                        else:
+                            self.predictions[i][idx] = 0
+    
                     # Get current score:
                     error += np.sum((self.predictions[i] - outputs_batch[i]) ** 2)
                     # Increment hit count:
-                    index_predicted = self.__indexOfGreatestValue(self.predictions[i])
-                    index_expected = self.__indexOfGreatestValue(outputs_batch[i])
                     hit_count += int(index_predicted == index_expected)
                     n_measures += 1
                     deltas = [[] for j in range(self.n_layers)]
@@ -107,20 +114,20 @@ class NeuralNetwork:
                         else:
                             gradients_accumulated[k - 2] = gradients_accumulated[k - 2] + gradients[k - 2]
 
-                for i in range(self.n_layers - 1):
-                    # Add a column with zeros instead of the bias column
-                    new_weights = np.zeros(self.weights[i].shape)
-                    new_weights[:,1:] = self.weights_without_bias[i]
+            for i in range(self.n_layers - 1):
+                # Add a column with zeros instead of the bias column
+                new_weights = np.zeros(self.weights[i].shape)
+                new_weights[:,1:] = self.weights_without_bias[i]
 
-                    P = self.reg_factor * new_weights
-                    gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
+                P = self.reg_factor * new_weights
+                gradients_accumulated[i] = (gradients_accumulated[i] + P) / len(self.data)
 
-                # Update weights
-                gradients_accumulated = np.array(gradients_accumulated)
-                self.weights = self.weights - (0.01 * gradients_accumulated[:-1])
-                self.weights_without_bias = self.weights.copy()
-                for i in range(len(self.weights_without_bias)):
-                    self.weights_without_bias[i] = self.weights_without_bias[i][:,1:]
+            # Update weights
+            gradients_accumulated = np.array(gradients_accumulated)
+            self.weights = self.weights - (self.alpha * gradients_accumulated[:-1])
+            self.weights_without_bias = self.weights.copy()
+            for i in range(len(self.weights_without_bias)):
+                self.weights_without_bias[i] = self.weights_without_bias[i][:,1:]
 
             if ((it + 1) % 50 == 0):
                 print('Iteration %s, error: %.5f, accuracy: %.5f' % (it + 1, error / n_measures, hit_count / n_measures))
@@ -154,7 +161,6 @@ class NeuralNetwork:
             weights[-1][:, 1:]
         )
 
-
         # Intermediate layers -> hidden_i+1 * hidden_i
         for i in range(0, len(self.hidden_layers_sizes) - 1):
             weights.append(
@@ -179,6 +185,7 @@ class NeuralNetwork:
         weights_without_bias.append(
             weights[-1][:, 1:]
         )
+
         self.weights = np.array(weights)
         self.weights_without_bias = np.array(weights_without_bias)
 
