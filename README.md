@@ -205,6 +205,13 @@ The script `main.py` trains and tests the multilayer neural network algorithm us
       Gradientes numerico de Theta3:
           [0.08135 0.17935 0.12476 0.13186]
           [0.20982 0.19195 0.30343 0.25249]
+  
+  Verificando corretude dos gradientes com base nos gradientes numericos:
+    Error = np.sum(gradiente via backprop - gradiente numerico)**2
+    Erro entre gradiente via backprop e gradiente numerico para Theta1: 0.00000000000000000014
+    Erro entre gradiente via backprop e gradiente numerico para Theta2: 0.00000000000000000017
+    Erro entre gradiente via backprop e gradiente numerico para Theta3: 0.00000000000000000002
+ 
   ```
 
 - Running the Multilayer Neural Network with a dataset
