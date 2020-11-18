@@ -53,7 +53,7 @@ The script `main.py` trains and tests the multilayer neural network algorithm us
   The file `network_v2.txt` is a example of this type of configuration.
 
 ### Important details
-- The algorithm uses k-fold (k = 5) for trainning and testing the network accuracy.
+- The algorithm uses k-fold (k = 10) for trainning and testing the network accuracy.
 - The initial weights are randomnly loaded on each fold iteration, those weights could have a value in the range of -1.0 and 1.0.
 - The input and output layers' sizes are automatically calculated from the dataset.
 
