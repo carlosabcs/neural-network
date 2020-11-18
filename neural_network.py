@@ -276,7 +276,7 @@ class NeuralNetwork:
 
         return error
 
-    def __calculate_numerical_gradient(self, e):
+    def __calculate_numerical_gradient(self, e, expected_gradients):
         print("--------------------------------------------")
         print("Rodando verificacao numerica de gradientes (epsilon=%.10f)" % e)
         accumulated_gradients = None
@@ -304,6 +304,7 @@ class NeuralNetwork:
 
         accumulated_gradients = np.array(accumulated_gradients)
 
+        errors = []
         # Gradients with regularization
         for i in range(len(accumulated_gradients)):
             print('%sGradientes numerico de Theta%d:' %(' ' * 4, i + 1))
@@ -313,9 +314,16 @@ class NeuralNetwork:
 
             P = self.reg_factor * new_weights
             accumulated_gradients[i] = (accumulated_gradients[i] + P) / len(self.data)
+            errors.append(np.sum((expected_gradients[i] - accumulated_gradients[i])**2))
+
             for row in accumulated_gradients[i]:
                 print('%s%s' % (' ' * 8, row))
             print()
+
+        print('Verificando corretude dos gradientes com base nos gradientes numericos:')
+        print('%sError = np.sum(gradiente via backprop - gradiente numerico)**2' % (' ' * 4))
+        for idx, err in enumerate(errors):
+            print('%sErro entre gradiente via backprop e gradiente numerico para Theta%d: %0.20f' % (' ' * 4, idx + 1, err))
 
     def test_backpropagation(self):
         print('Parâmetro de regularizacao lambda: %s\n' % self.reg_factor)
@@ -393,7 +401,7 @@ class NeuralNetwork:
             print()
 
         # Run calculation of numerical gradients
-        self.__calculate_numerical_gradient(0.0000010000)
+        self.__calculate_numerical_gradient(0.0000010000, gradients_accumulated)
 
 
 

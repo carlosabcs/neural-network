@@ -54,7 +54,7 @@ def main():
             data_instance=df.iloc[0]
         )
     )
-    cv.cross_validate(df, 5, 1)
+    cv.cross_validate(df, 10, 1)
 
 
 if __name__ == "__main__":
